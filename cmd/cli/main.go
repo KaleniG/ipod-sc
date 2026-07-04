@@ -1,0 +1,71 @@
+package main
+
+import (
+	"fmt"
+	"ipod-sc/internal/logic"
+	"log"
+	"os"
+
+	copy "github.com/otiai10/copy"
+)
+
+func main() {
+	if len(os.Args) < 3 {
+		fmt.Println("Invalid usage of ipod-sc, missing parameters")
+		fmt.Println("")
+		fmt.Println("Usage:")
+		fmt.Println("  ipod-sc <input_dir> <output_dir>")
+		fmt.Println("Arguments:")
+		fmt.Println("  input_dir   Folder containing music files")
+		fmt.Println("  output_dir  Folder where processed files will be written")
+		fmt.Println("")
+		fmt.Println("Example:")
+		fmt.Println("  ipod-sc ./input ./output")
+		os.Exit(1)
+	}
+
+	indir := os.Args[1]
+	outdir := os.Args[2]
+
+	if logic.DirExists(indir) {
+		log.Print("input folder [" + indir + "] exists")
+	} else {
+		log.Panic("input folder [" + indir + "] does not exist")
+	}
+
+	if logic.DirExists(outdir) {
+		log.Print("output folder [" + outdir + "] exists")
+	} else {
+		log.Panic("output folder [" + outdir + "] does not exist")
+	}
+
+	tempDirName, err := os.MkdirTemp("", "ipod-sc-*")
+	if err != nil {
+		log.Panic("failed to create a temporary folder, " + err.Error())
+	}
+	log.Print("temporary folder for copy created")
+	defer os.RemoveAll(tempDirName)
+
+	log.Print("file copying to temporary folder started")
+	if err := copy.Copy(indir, tempDirName); err != nil {
+		log.Panic("failed to copy files into the temporary folder, " + err.Error())
+	}
+	log.Print("file copying to temporary folder finished")
+
+	log.Print("processing files started")
+	processedSongs, validSongs, totalSongs := logic.ProcessFiles(tempDirName)
+	log.Print("processing files finished")
+
+	log.Print("processing folders started")
+	logic.ProcessFolders(tempDirName)
+	log.Print("processing folders finished")
+
+	log.Print("processed ", processedSongs, " songs, ", validSongs, " valid songs, out of ", totalSongs, " total songs")
+
+	log.Print("file copying to output folder started")
+	if err := copy.Copy(tempDirName, outdir); err != nil {
+		log.Panic("failed to copy files into the temporary folder, " + err.Error())
+	}
+	log.Print("file copying to output folder finished")
+
+}

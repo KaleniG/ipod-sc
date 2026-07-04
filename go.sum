@@ -12,6 +12,8 @@ github.com/go-flac/go-flac v1.0.0 h1:6qI9XOVLcO50xpzm3nXvO31BgDgHhnr/p/rER/K/doY
 github.com/go-flac/go-flac v1.0.0/go.mod h1:WnZhcpmq4u1UdZMNn9LYSoASpWOCMOoxXxcWEHSzkW8=
 github.com/google/gousb v1.1.3 h1:xt6M5TDsGSZ+rlomz5Si5Hmd/Fvbmo2YCJHN+yGaK4o=
 github.com/google/gousb v1.1.3/go.mod h1:GGWUkK0gAXDzxhwrzetW592aOmkkqSGcj5KLEgmCVUg=
+github.com/gotk3/gotk3 v0.6.4 h1:5ur/PRr86PwCG8eSj98D1eXvhrNNK6GILS2zq779dCg=
+github.com/gotk3/gotk3 v0.6.4/go.mod h1:/hqFpkNa9T3JgNAE2fLvCdov7c5bw//FHNZrZ3Uv9/Q=
 github.com/hhrutter/lzw v1.0.0 h1:laL89Llp86W3rRs83LvKbwYRx6INE8gDn0XNb1oXtm0=
 github.com/hhrutter/lzw v1.0.0/go.mod h1:2HC6DJSn/n6iAZfgM3Pg+cP1KxeWc3ezG8bBqW5+WEo=
 github.com/hhrutter/tiff v1.0.1 h1:MIus8caHU5U6823gx7C6jrfoEvfSTGtEFRiM8/LOzC0=

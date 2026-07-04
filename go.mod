@@ -10,6 +10,7 @@ require (
 	github.com/diamondburned/gotk4/pkg v0.3.1 // indirect
 	github.com/go-flac/go-flac v1.0.0 // indirect
 	github.com/google/gousb v1.1.3 // indirect
+	github.com/gotk3/gotk3 v0.6.4 // indirect
 	github.com/hhrutter/lzw v1.0.0 // indirect
 	github.com/hhrutter/tiff v1.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
