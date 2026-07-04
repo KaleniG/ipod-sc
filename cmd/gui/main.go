@@ -77,6 +77,7 @@ func main() {
 			dialog.SelectFolder(ctx, nil, func(result gio.AsyncResulter) {
 				file, err := dialog.SelectFolderFinish(result)
 				if err != nil || file == nil {
+					browseWindowOpen = false
 					return
 				}
 
