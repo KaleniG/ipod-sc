@@ -56,6 +56,7 @@ func main() {
 		textView := gtk.NewTextView()
 		textView.SetEditable(false)
 		textView.SetCursorVisible(false)
+		textView.SetWrapMode(gtk.WrapWord)
 
 		buffer := textView.Buffer()
 
@@ -83,6 +84,9 @@ func main() {
 				browseWindowOpen = false
 			})
 		}
+
+		// SKIP ALREADY TRANSFERRED VALID FILES IN OUTPUT FOLDER CHECKBOX
+		check := gtk.NewCheckButtonWithLabel("Skip files already loaded")
 
 		// INPUT DIRECTORY (INPUT FIELD AND BROWSE BUTTON)
 		sourceEntry := gtk.NewEntry()
@@ -155,6 +159,11 @@ func main() {
 				indir := sourceEntry.Text()
 				outdir := outputEntry.Text()
 
+				filesToSkip := []string{}
+				if check.Active() {
+					filesToSkip = logic.GetFilesToSkip(indir, outdir)
+				}
+
 				if logic.DirExists(indir) {
 					log.Print("input folder [" + indir + "] exists")
 				} else {
@@ -182,7 +191,7 @@ func main() {
 						log.Print("file copying to temporary folder finished")
 
 						log.Print("processing files started")
-						processedSongs, validSongs, totalSongs := logic.ProcessFiles(tempDirName)
+						processedSongs, validSongs, totalSongs := logic.ProcessFiles(tempDirName, filesToSkip)
 						log.Print("processing files finished")
 
 						log.Print("processing folders started")
@@ -209,6 +218,7 @@ func main() {
 		})
 
 		// FINAL APPEND OF ALL THE ELEMENTS
+		box.Append(check)
 		box.Append(sourceRow)
 		box.Append(outputRow)
 		box.Append(startButton)

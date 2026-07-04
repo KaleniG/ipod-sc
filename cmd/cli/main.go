@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"ipod-sc/internal/logic"
 	"log"
@@ -10,22 +11,39 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 3 {
+	skipExistingFiles := flag.Bool("s", false, "Skip existing files")
+	skipExistingFilesLong := flag.Bool("skip-existing", false, "Skip existing files (long flag)")
+
+	flag.Usage = func() {
 		fmt.Println("Invalid usage of ipod-sc, missing parameters")
 		fmt.Println("")
 		fmt.Println("Usage:")
-		fmt.Println("  ipod-sc <input_dir> <output_dir>")
+		fmt.Println("  ipod-sc [options] <input_dir> <output_dir>")
+		fmt.Println("")
+		fmt.Println("Options:")
+		fmt.Println("  -s, --skip-existing   Skip existing files")
+		fmt.Println("")
 		fmt.Println("Arguments:")
 		fmt.Println("  input_dir   Folder containing music files")
 		fmt.Println("  output_dir  Folder where processed files will be written")
 		fmt.Println("")
 		fmt.Println("Example:")
-		fmt.Println("  ipod-sc ./input ./output")
+		fmt.Println("  ipod-sc -s ./input ./output")
+	}
+
+	flag.Parse()
+
+	skipFlag := *skipExistingFiles || *skipExistingFilesLong
+
+	args := flag.Args()
+
+	if len(args) < 2 {
+		flag.Usage()
 		os.Exit(1)
 	}
 
-	indir := os.Args[1]
-	outdir := os.Args[2]
+	indir := args[0]
+	outdir := args[1]
 
 	if logic.DirExists(indir) {
 		log.Print("input folder [" + indir + "] exists")
@@ -37,6 +55,12 @@ func main() {
 		log.Print("output folder [" + outdir + "] exists")
 	} else {
 		log.Panic("output folder [" + outdir + "] does not exist")
+	}
+
+	filesToSkip := []string{}
+
+	if skipFlag {
+		filesToSkip = logic.GetFilesToSkip(indir, outdir)
 	}
 
 	tempDirName, err := os.MkdirTemp("", "ipod-sc-*")
@@ -53,7 +77,7 @@ func main() {
 	log.Print("file copying to temporary folder finished")
 
 	log.Print("processing files started")
-	processedSongs, validSongs, totalSongs := logic.ProcessFiles(tempDirName)
+	processedSongs, validSongs, totalSongs := logic.ProcessFiles(tempDirName, filesToSkip)
 	log.Print("processing files finished")
 
 	log.Print("processing folders started")
@@ -67,5 +91,4 @@ func main() {
 		log.Panic("failed to copy files into the temporary folder, " + err.Error())
 	}
 	log.Print("file copying to output folder finished")
-
 }

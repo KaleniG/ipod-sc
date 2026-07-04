@@ -13,7 +13,7 @@ import (
 	"github.com/sunshineplan/imgconv"
 )
 
-func ProcessFiles(dir string) (int, int, int) {
+func ProcessFiles(dir string, skipList []string) (int, int, int) {
 	files := listFiles(dir)
 
 	processedSongsCount := 0
@@ -21,6 +21,18 @@ func ProcessFiles(dir string) (int, int, int) {
 	totalSongsCount := 0
 
 	for _, file := range files {
+		skip := false
+		for _, skipFile := range skipList {
+			if file == skipFile {
+				skip = true
+				break
+			}
+		}
+
+		if skip {
+			continue
+		}
+
 		fileExt := filepath.Ext(file)
 		switch fileExt {
 		case ".m4a":
@@ -182,6 +194,7 @@ func ProcessFiles(dir string) (int, int, int) {
 			if strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)) == "cover" {
 				log.Print("detected cover art file [" + file + "], skipping")
 			}
+			continue
 		default:
 			log.Print("unsupported file type: ", file)
 			continue
