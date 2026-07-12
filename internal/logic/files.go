@@ -98,9 +98,10 @@ func ProcessFiles(dir string, skipList []string) (int, int, int) {
 
 			// * GETTING SAVE NAMINGS
 			sanitizedFileName := sanitize(strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)))
+			albumFolderName := sanitize(fileMP4.Tag.Album())
 
 			// * MAKING A FOLDER FOR THE FILE AND COVER ART
-			newFolderPath := filepath.Join(filepath.Dir(file), sanitizedFileName)
+			newFolderPath := filepath.Join(filepath.Dir(file), albumFolderName)
 			err = os.MkdirAll(newFolderPath, 0755)
 			if err != nil {
 				log.Print(err, " failed to create the path [", newFolderPath, "]")
@@ -164,33 +165,37 @@ func ProcessFiles(dir string, skipList []string) (int, int, int) {
 				continue
 			}
 
-			validCoverArt := img.Bounds().Size().X == 500
-			validFileName := file == filepath.Join(
-				filepath.Dir(file),
-				sanitize(strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)))+fileExt,
-			)
+			// * DATA GATHERING
+			resizeNeeded := img.Bounds().Size().X != 500
+			_, err = os.Stat(filepath.Dir(file) + "/cover.jpg")
+			fileCoverExists := !os.IsNotExist(err)
+			parentFolderValidName := filepath.Base(filepath.Dir(file)) == sanitize(filepath.Base(filepath.Dir(file)))
 
-			if validCoverArt && validFileName {
+			if !resizeNeeded && fileCoverExists && parentFolderValidName {
 				validSongsCount++
 				log.Print("skipped [" + file + "], the flac is already in a valid state")
 				continue
 			}
 
-			// * COVER ART RESIZING & REPLACEMENT
-			if !validCoverArt {
+			// * COVER ART RESIZING
+			if resizeNeeded {
 				img = imgconv.Resize(img, &imgconv.ResizeOption{Width: 500})
+			}
 
-				var buf bytes.Buffer
-				err = imgconv.Write(&buf, img, &imgconv.FormatOption{
-					Format: imgconv.JPEG,
-				})
-				if err != nil {
-					log.Print(err, " failed to write cover art into a buffer for file [", file, "]")
-					errorLog.Print(err, " failed to write cover art into a buffer for file [", file, "]")
-					continue
-				}
+			// * COVER ART EXTRACTION
+			var buf bytes.Buffer
+			err = imgconv.Write(&buf, img, &imgconv.FormatOption{
+				Format: imgconv.JPEG,
+			})
+			if err != nil {
+				log.Print(err, " failed to write cover art into a buffer for file [", file, "]")
+				errorLog.Print(err, " failed to write cover art into a buffer for file [", file, "]")
+				continue
+			}
+			jpegBytes := buf.Bytes()
 
-				jpegBytes := buf.Bytes()
+			// * COVER ART REPLACEMENT
+			if resizeNeeded {
 				fileFLAC.RemovePictures()
 				fileFLAC.AddPicture(&flac.Picture{
 					PictureType: 3,
@@ -200,27 +205,45 @@ func ProcessFiles(dir string, skipList []string) (int, int, int) {
 				log.Print("saved flac file metadata [" + file + "] with resized cover art")
 			}
 
-			if !validFileName {
-				// * GETTING SAVE NAMINGS
-				sanitizedFileName := filepath.Join(
-					filepath.Dir(file),
-					sanitize(strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)))+fileExt,
-				)
-				// * SAVING THE FILE
-				err = fileFLAC.WriteFile(file)
-				if err != nil {
-					log.Print(err, " failed to save the file [", file, "]")
-					errorLog.Print(err, " failed to save the file [", file, "]")
-					continue
-				}
-				err = os.Rename(file, sanitizedFileName)
-				if err != nil {
-					log.Print(err, " failed to rename file [", file, "] to [", sanitizedFileName, "]")
-					errorLog.Print(err, " failed to rename file [", file, "] to [", sanitizedFileName, "]")
-					continue
-				}
-				log.Print("saved flac file as [" + sanitizedFileName + "]")
+			// * GETTING SAVE NAMINGS
+			sanitizedFileName := sanitize(strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)))
+			albumFolderName := sanitize(fileFLAC.VorbisComment().Get("ALBUM")[0])
+
+			// * MAKING A FOLDER FOR THE FILE AND COVER ART
+			newFolderPath := filepath.Join(filepath.Dir(file), albumFolderName)
+			err = os.MkdirAll(newFolderPath, 0755)
+			if err != nil {
+				log.Print(err, " failed to create the path [", newFolderPath, "]")
+				errorLog.Print(err, " failed to create the path [", newFolderPath, "]")
+				continue
 			}
+			log.Print("created folder [" + newFolderPath + "]")
+
+			// * SAVING AND MOVING THE FILE IN THE NEW FOLDER
+			saveFilePath := filepath.Join(newFolderPath, sanitizedFileName+fileExt)
+			err = fileFLAC.WriteFile(file)
+			if err != nil {
+				log.Print(err, " failed to save the file [", file, "]")
+				errorLog.Print(err, " failed to save the file [", file, "]")
+				continue
+			}
+			err = os.Rename(file, saveFilePath)
+			if err != nil {
+				log.Print(err, " failed to move the file [", file, "] to [", saveFilePath, "]")
+				errorLog.Print(err, " failed to move the file [", file, "] to [", saveFilePath, "]")
+				continue
+			}
+			log.Print("saved m4a file [" + saveFilePath + "] with resized cover art and moved to folder [" + newFolderPath + "]")
+
+			// * SAVING THE COVER ART IN THE NEW FOLDER
+			saveCoverDir := filepath.Join(newFolderPath, "cover.jpg")
+			err = os.WriteFile(saveCoverDir, jpegBytes, 0644)
+			if err != nil {
+				log.Print(err, " failed to save the cover art file for file [", file, "]")
+				errorLog.Print(err, " failed to save the cover art file for file [", file, "]")
+				continue
+			}
+			log.Print("saved cover art [" + saveCoverDir + "] in folder [" + newFolderPath + "]")
 
 			validSongsCount++
 			processedSongsCount++
