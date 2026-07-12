@@ -21,7 +21,8 @@ func ProcessFolders(dir string) {
 			if folder != newPath {
 				err := os.Rename(folder, newPath)
 				if err != nil {
-					log.Print(err, " ", folder)
+					log.Print(err, " failed to rename the folder [", folder, "]")
+					errorLog.Print(err, " failed to rename the folder [", folder, "]")
 					continue
 				}
 
@@ -60,6 +61,8 @@ func listFolders(dir string) []string {
 		return nil
 	})
 	if err != nil {
+
+		errorLog.Print(err)
 		log.Fatal(err)
 	}
 
